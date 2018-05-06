@@ -1,0 +1,43 @@
+{
+	"min_packer_version": "0.12.0",
+	"variables": {
+		"aws_region": "us-west-2",
+		"aws_access_key": "{{env `AWS_ACCESS_KEY`}}",
+		"aws_secret_key": "{{env `AWS_SECRET_KEY`}}",
+        "harbor_version": "1.4.0",
+		"docker_compose_version": "1.19.0"
+	},
+	"builders": [{
+		"access_key": "{{user `aws_access_key`}}",
+		"secret_key": "{{user `aws_secret_key`}}",
+		"ami_name": "harbor-ubuntu-{{isotime | clean_ami_name}}",
+		"ami_description": "An Ubuntu 16.04 AMI that has VMware Harbor installed.",
+		"instance_type": "t2.medium",
+		"name": "ubuntu16-ami",
+		"region": "{{user `aws_region`}}",
+		"type": "amazon-ebs",
+		"source_ami_filter": {
+			"filters": {
+				"virtualization-type": "hvm",
+				"architecture": "x86_64",
+				"name": "*ubuntu-xenial-16.04-amd64-server-*",
+				"block-device-mapping.volume-type": "gp2",
+				"root-device-type": "ebs"
+			},
+			"owners": ["099720109477"],
+			"most_recent": true
+		},
+		"ssh_username": "ubuntu"
+	}],
+	"provisioners": [{
+		"type": "file",
+		"source": "{{template_dir}}/../../../terraform-aws-harbor/modules/install-harbor/install-harbor.sh",
+		"destination": "/tmp/"
+	  },{
+		"type": "shell",
+		"inline": [
+		  "sudo chmod 0777 /tmp/install-harbor.sh",
+		  "sudo /tmp/install-harbor.sh --version {{user `harbor_version`}}"
+		]
+	}]
+}
